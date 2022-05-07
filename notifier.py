@@ -21,7 +21,7 @@ def notify(text):
     """Notifies master about an event"""
     global swo_sock
 
-    url = Promethephz.url + \
+    url = Promethephz["url"] + \
         f"sendMessage?chat_id={quote(Promethephz['chid'])}&text={quote(text)}"
     request = f"GET {url} HTTP/1.1\r\nHost: api.telegram.org\r\n\r\n"
 

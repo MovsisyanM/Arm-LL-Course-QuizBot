@@ -7,32 +7,57 @@ from pathlib import Path
 # region proc
 
 
-fwd = [[">>"]]
+fwd = [["Օկ"]]
 env = Path(".env")
 remove = "remove"
+
+replies = {
+    0: ("Ողջույն, բարի գալուստ։ Այս բոտը կթարմացնի հիշողությունդ` ամփոփելով այս կիսամյակը։", fwd, (0, 0)),
+    1: ("Լրացրեք ____-ը\nԲուքը, երգը, ____", [["մայրը", "գիրքը"], ["երեխան", "փոքրիկը"]], (1, 0)),
+    2: ("Գառ ____", [["ախպերիկ", "ապերիկ"], ["ախպեր", "ախպոր"]], (0, 0)),
+    3: ("____ փուչ ընկույզների մասին", [["Հեքիաթ", "Առակ"], ["Պատմվածք", "Վեպ"]], (0, 0)),
+    4: ("", [["", ""], ["", ""]], (0, 0)),
+    5: ("", [["", ""], ["", ""]], (0, 0)),
+    6: ("", [["", ""], ["", ""]], (0, 0)),
+    7: ("", [["", ""], ["", ""]], (0, 0)),
+    8: ("", [["", ""], ["", ""]], (0, 0)),
+    9: ("", [["", ""], ["", ""]], (0, 0)),
+    10: ("", [["", ""], ["", ""]], (0, 0)),
+    11: ("", [["", ""], ["", ""]], (0, 0)),
+    12: ("", [["", ""], ["", ""]], (0, 0)),
+
+}
+
+with open(env / "reset_key") as rk:
+    reset_key = rk.read()
 
 
 def ProcessMsg(user_id, message, states):
 
-    if user_id not in states.keys() or "m0" not in states[user_id].keys():
+    if user_id not in states.keys() or "0" not in states[user_id].keys():
         states[user_id] = {}
-        states[user_id]["m0"] = True
-        return states, illustrations["0"], fwd
+        states[user_id][0] = True
+        return states, replies[0][0], replies[0][1]
 
     keys = states[user_id].keys()
 
-    with open(env / "reset_key") as rk:
-        if message == "reset: " + rk.read():
-            states[user_id] = {}
-            return states, f"Progress reset for {user_id}", fwd
+    if message == "reset: " + reset_key:
+        states[user_id] = {}
+        return states, f"Նորից սկսենք, {user_id}", fwd
 
-    m = 0
+    for i in range(1, len(replies)):
+        # find the progress that the user has made
+        if str(i) not in keys and str(i-1) in keys:
+            # if the user wrote the correct answer
+            if message.lower() == replies[i-1][1][replies[i-1][2][0]][replies[i-1][2][1]].lower():
+                # progress
+                states[user_id][i] = True
+                # return the next question
+                return states, replies[i][0], replies[i][1]
+            # else try again
+            return states, "Կրկին փորձիր, պատասխանդ սխալ էր։\n" + replies[i-1][0], replies[i-1][1]
 
-    if message == ">>" and f"m{m}" not in keys and f"m{m-1}" in keys:
-        states[user_id][f"m{m}"] = True
-        return states, "The moon illuminated the mountainous path for Sis and flew off.", fwd
-
-    return states, "Don't stray from your destiny..." if f"m{m-1}" not in keys else "...", None
+    return states, "...", None
 
 
 def state_sync(user_id, message, engine):
@@ -57,9 +82,9 @@ def state_sync(user_id, message, engine):
 
 # endregion proc
 
-with open(env / "toekn", "r") as tkn:
+with open(env / "token", "r") as tkn:
     quizbot = TelegramBot.Bot(
-        r"https://api.telegram.org/bot" + tkn.read().strip())
+        f"https://api.telegram.org/bot{tkn.read().strip()}/")
 
 
 def processALLQuizBotMsg(data, engine):
@@ -99,12 +124,7 @@ def processALLQuizBotMsg(data, engine):
         else:
             reply_ = quizbot.ReplyKeyboardMarkup(reply, False, False, False)
 
-        if answer in illustrations.values():
-            answer_ = illustration_links[answer]
-            quizbot.send_photo(sender, answer_, None, False, reply_)
-            return
-        else:
-            quizbot.send_message(sender, answer, reply_)
+        quizbot.send_message(sender, answer, reply_)
 
     # region discretizing incoming requests
 
@@ -113,11 +133,11 @@ def processALLQuizBotMsg(data, engine):
             try:
                 respond(i, engine)
             except Exception as e:
-                notify(f"Failed to respond MountainousBot\n{i}\n{str(e)}")
+                notify(f"Failed to respond ALL_bot\n{i}\n{str(e)}")
     else:
         try:
             respond(data, engine)
         except Exception as e:
-            notify(f"Failed to respond MountainousBot\na{data}\n{str(e)}")
+            notify(f"Failed to respond ALL_bot\na{data}\n{str(e)}")
 
     # endregion discretizing incoming requests
